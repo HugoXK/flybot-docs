@@ -75,5 +75,5 @@ const landing = `<span class="kicker">FLYBOT · DOCUMENTATION</span><h1>FlyBot �
 ${[["/docs/", "Overview", "FlyBot 是什么、三个插件、安装与第一次运行。"], ["/docs/architecture/", "Architecture", "核心、插件、事件、Team 与运行方式。"], ["/docs/subsystems/", "Subsystems", "tree、social、timeline、host、client、plugin runtime。"], ["/docs/docker/", "Run it", "Docker、sandbox、模型 key 与集成。"], ["/docs/interop/", "Interop", "Live E2E、room fixture 与协作运行时。"]].map(([h,t,d]) => `<a class="docs-card" href="${h}"><b>${t}</b><span>${d}</span><em>READ ↗</em></a>`).join("")}
 </div><h2>Quick links</h2><ul><li><a href="${app}">Open FlyBot</a></li><li><a href="${gh}">Upstream repository</a></li><li><a href="${gh}/tree/main/docs">Documentation sources</a></li></ul>
 <p class="mut">This site is built from <code>ThinkFlowLab/FlyBot</code> <code>README.md</code> and <code>docs/</code> on a schedule; no documentation is copied or pinned here.</p>`;
-writeFileSync(join(out, "index.html"), landing);
+writeFileSync(join(out, "index.html"), page("", "FlyBot 文档", "FlyBot documentation: tree, social and timeline plugins on DeepSeek Harness.", landing));
 console.log(`built ${files.length} doc pages -> ${out}`);
