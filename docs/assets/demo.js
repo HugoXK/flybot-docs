@@ -29,6 +29,7 @@
     chat.querySelector('.demo-empty')?.remove();
     const row = document.createElement('div');
     row.className = `team-msg ${kind}`;
+    if (role !== 'You') row.dataset.role = role;
     const who = document.createElement('span');
     who.className = 'team-who';
     who.dataset.role = role;
