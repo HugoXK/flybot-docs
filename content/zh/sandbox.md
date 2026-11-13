@@ -1,4 +1,4 @@
-# 沙箱与 Bot 会话权限
+# 沙箱与权限
 
 每个 Bot 会话都在 DSH 的**文件策略**（`read-only`、`workspace-write`、`danger-full-access`）与**审批策略**（`ask` 或关闭）下运行。两者共同决定 `bash` 调用能做什么、是否需要主机上的隔离后端。FlyBot 不安装或修改策略；策略由会话设置。
 
@@ -14,7 +14,7 @@
 
 | 审批策略 | 效果 |
 | --- | --- |
-| `ask`（审批开启） | DSH 可以请求把一次调用从 `workspace-write` 升级到 `danger-full-access`；FlyBot 显示卡片，standing approval 可代 Bot 或房间回答 |
+| `ask`（开启） | DSH 可以请求把一次调用从 `workspace-write` 升级到 `danger-full-access`；FlyBot 显示卡片，standing approval 可代 Bot 或房间回答 |
 | 关闭 | 不升级；无后端时 `workspace-write` 调用保持拒绝 |
 
 拒绝是结构化的 `SANDBOX_UNAVAILABLE`，不是命令失败：它表示会话无法隔离命令，而不是命令本身有错。
@@ -29,7 +29,7 @@ node .github/scripts/sandbox-preflight.mjs --mode danger-full-access
 node .github/scripts/sandbox-preflight.mjs --mode workspace-write --json
 ```
 
-退出码：`0` 可用，`3` 确认被阻塞，`4` 无法判断（**不是阻塞**），`2` 用法错误。文件策略是会话设置，预检无法读回，因此必须用 `--mode` 或 `FLYBOT_SANDBOX_MODE` 告知；`--mode` 优先。`danger-full-access` 不需要后端；`read-only`/`workspace-write` 需要可用后端；未指定 mode 时只报告是否能找到后端。
+退出码：`0` 可用，`3` 确认被阻塞，`4` 无法判断，`2` 用法错误。文件策略是会话设置，预检无法读回，因此必须用 `--mode` 或 `FLYBOT_SANDBOX_MODE` 告知；`--mode` 优先。`danger-full-access` 不需要后端；`read-only`/`workspace-write` 需要可用后端；未指定 mode 时只报告是否能找到后端。
 
 ## 被阻塞时
 

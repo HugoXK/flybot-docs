@@ -1,169 +1,58 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
-import { dirname, join, posix, relative, sep } from 'node:path';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { marked } from 'marked';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const PRODUCT = process.env.FLYBOT_DIR || join(ROOT, 'flybot');
 const OUT = process.env.OUT_DIR || join(ROOT, 'site');
 const APP = 'https://flybot.hugoxk.online';
 const GH = 'https://github.com/ThinkFlowLab/FlyBot';
 const DOCS_GH = 'https://github.com/HugoXK/flybot-docs';
-const ZH_DIR = join(ROOT, 'translations', 'zh');
-const zhFile = (p) => (p.zhFrom === 'product' ? join(PRODUCT, p.zh) : join(ZH_DIR, p.zh));
+const EN_DIR = join(ROOT, 'content', 'en');
+const ZH_DIR = join(ROOT, 'content', 'zh');
 
-const PAGE_DEFS = [
-  { slug: '', en: 'README.md', zh: 'README.zh.md', zhFrom: 'product', groupEn: 'Overview', groupZh: '概览', titleEn: 'FlyBot', titleZh: 'FlyBot 文档' },
-  { slug: 'docker', en: 'docs/docker.md', zh: 'docs/docker.zh.md', zhFrom: 'product', groupEn: 'Run', groupZh: '运行' },
-  { slug: 'sandbox', en: 'docs/sandbox.md', zh: 'sandbox.md', groupEn: 'Run', groupZh: '运行' },
-  { slug: 'deepseek-api-key', en: 'docs/deepseek-api-key.md', groupEn: 'Run', groupZh: '英文参考', labelZh: '配置 DeepSeek API Key' },
-  { slug: 'integrating', en: 'docs/integrating.md', zh: 'integrating.md', groupEn: 'Run', groupZh: '运行' },
-  { slug: 'architecture', en: 'docs/architecture.md', zh: 'architecture.md', groupEn: 'Understand', groupZh: '理解' },
-  { slug: 'reference', en: 'docs/reference.md', zh: 'reference.md', groupEn: 'Understand', groupZh: '理解' },
-  { slug: 'code-standards', en: 'docs/code-standards.md', zh: 'code-standards.md', groupEn: 'Understand', groupZh: '理解' },
-  { slug: 'autonomous-dev', en: 'docs/autonomous-dev.md', zh: 'autonomous-dev.md', groupEn: 'Understand', groupZh: '理解' },
-  { slug: 'controller', en: 'docs/controller.md', zh: 'controller.md', groupEn: 'Understand', groupZh: '理解' },
-  { slug: 'known-issues', en: 'docs/known-issues.md', zh: 'docs/known-issues.zh.md', zhFrom: 'product', groupEn: 'Understand', groupZh: '理解' },
+const PAGES = [
+  { slug: 'overview', groupEn: 'Overview', groupZh: '概览' },
+  { slug: 'getting-started', groupEn: 'Getting started', groupZh: '快速开始' },
+  { slug: 'architecture', groupEn: 'Concepts', groupZh: '概念' },
+  { slug: 'sandbox', groupEn: 'Concepts', groupZh: '概念' },
+  { slug: 'development', groupEn: 'Development', groupZh: '开发' },
+  { slug: 'controller', groupEn: 'Reference', groupZh: '参考' },
+  { slug: 'reference', groupEn: 'Reference', groupZh: '参考' },
 ];
-
-const GROUPS_EN = ['Overview', 'Run', 'Understand', 'Subsystems', 'Interop', 'Testing', 'Reports', 'Design & operations'];
-const GROUPS_ZH = ['概览', '运行', '理解', '英文参考'];
+const GROUPS_EN = ['Overview', 'Getting started', 'Concepts', 'Development', 'Reference'];
+const GROUPS_ZH = ['概览', '快速开始', '概念', '开发', '参考'];
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const read = (p) => readFileSync(p, 'utf8');
 const titleOf = (md, fallback) => (md.match(/^#\s+(.+)$/m)?.[1] || fallback).replace(/[*_`]/g, '').trim();
+const zhFile = (slug) => join(ZH_DIR, `${slug}.md`);
+const enFile = (slug) => join(EN_DIR, `${slug}.md`);
 
-function walk(dir, acc = []) {
-  for (const name of readdirSync(dir)) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) walk(p, acc);
-    else if (p.endsWith('.md')) acc.push('docs/' + relative(join(PRODUCT, 'docs'), p).split(sep).join('/'));
-  }
-  return acc;
-}
-
-function collectPages() {
-  const known = new Map(PAGE_DEFS.map((p) => [p.en, p]));
-  const pages = PAGE_DEFS.map((p) => ({ ...p }));
-  const extra = [];
-  for (const en of walk(join(PRODUCT, 'docs'))) {
-    if (known.has(en)) continue;
-    let slug = en.replace(/^docs\//, '').replace(/\.md$/, '').replace(/^README$/, '');
-    if (slug.endsWith('/README')) slug = slug.slice(0, -7);
-    let groupEn = 'Design & operations';
-    if (en.startsWith('docs/subsystems/')) groupEn = 'Subsystems';
-    else if (en.startsWith('docs/interop/')) groupEn = 'Interop';
-    else if (en.startsWith('docs/testing/')) groupEn = 'Testing';
-    else if (en.startsWith('docs/reports/')) groupEn = 'Reports';
-    if (!en.endsWith('.zh.md') && en !== 'docs/README.md') extra.push({ slug, en, groupEn, groupZh: '英文参考' });
-  }
-  return [...pages, ...extra];
-}
-
-function rewriteRaw(s, lang, sourcePath) {
-  const dir = posix.dirname(sourcePath);
-  return s.replace(/(href|src)="([^"]+)"/g, (match, attr, value) => {
-    if (/^(https?:|mailto:|#|\/|data:)/.test(value)) return match;
-    const at = value.indexOf('#');
-    const hash = at === -1 ? '' : value.slice(at);
-    const raw = at === -1 ? value : value.slice(0, at);
-    if (!raw) return match;
-    if (attr === 'src' || /\.(svg|png|jpe?g|webp|gif)$/i.test(raw)) {
-      if (/^(?:\.\.\/)?docs\/assets\//.test(raw)) {
-        const file = raw.replace(/^(?:\.\.\/)?docs\/assets\//, '');
-        return `${attr}="/assets/docs-assets/${file}${hash}"`;
-      }
-      if (/(?:^|\/)images\//.test(raw)) {
-        const file = raw.replace(/^(?:\.\.\/)?docs\/images\//, '').replace(/^images\//, '');
-        return `${attr}="/assets/images/${file}${hash}"`;
-      }
-      return match;
-    }
-    const resolved = posix.normalize(posix.join(dir, raw)).replace(/^\.\//, '');
-    if (resolved.startsWith('docs/') && resolved.endsWith('.md')) {
-      const slug = resolved.replace(/^docs\//, '').replace(/\.md$/, '').replace(/^README$/, '');
-      if (lang === 'zh' && ZH_URL.has(slug)) return `${attr}="${ZH_URL.get(slug)}${hash}"`;
-      return `${attr}="${EN_URL.get(resolved) || `/docs/${slug}/`}${hash}"`;
-    }
-    if (resolved === 'README.md') return `${attr}="${lang === 'zh' ? '/zh/' : '/'}${hash}"`;
-    if (resolved === 'README.zh.md') return `${attr}="/zh/${hash}"`;
-    if (existsSync(join(PRODUCT, resolved))) return `${attr}="${GH}/blob/main/${resolved}${hash}"`;
-    return match;
+function rewrite(md, lang) {
+  let s = md;
+  s = s.replace(/\]\((?:\.\/)?([a-z0-9-]+)\.md(#[^)]*)?\)/g, (_m, slug, hash = '') => {
+    if (!PAGES.some((p) => p.slug === slug)) return _m;
+    return `](${lang === 'zh' ? `/zh/docs/${slug}/` : `/docs/${slug}/`}${hash})`;
   });
-}
-
-function rewrite(md, lang, sourcePath) {
-  let s = md.replace(/\]\(([^)\s]+)(\s+"[^"]*")?\)/g, (match, target, title = '') => {
-    if (/^(https?:|mailto:|#|data:)/.test(target)) return match;
-    const at = target.indexOf('#');
-    const hash = at === -1 ? '' : target.slice(at);
-    const raw = at === -1 ? target : target.slice(0, at);
-    if (!raw) return match;
-    if (/^(?:\.\.\/)?docs\/assets\//.test(raw)) {
-      const file = raw.replace(/^(?:\.\.\/)?docs\/assets\//, '');
-      return `](/assets/docs-assets/${file}${hash}${title})`;
-    }
-    if (/(?:^|\/)images\//.test(raw)) {
-      const file = raw.replace(/^(?:\.\.\/)?docs\/images\//, '').replace(/^images\//, '');
-      return `](/assets/images/${file}${hash}${title})`;
-    }
-    const resolved = posix.normalize(posix.join(posix.dirname(sourcePath), raw)).replace(/^\.\//, '');
-    if (resolved.startsWith('docs/') && resolved.endsWith('.md')) {
-      const slug = resolved.replace(/^docs\//, '').replace(/\.md$/, '').replace(/^README$/, '');
-      if (lang === 'zh' && ZH_URL.has(slug)) return `](${ZH_URL.get(slug)}${hash}${title})`;
-      return `](${EN_URL.get(resolved) || `/docs/${slug}/`}${hash}${title})`;
-    }
-    if (resolved === 'README.md') return `](${lang === 'zh' ? '/zh/' : '/'}${hash}${title})`;
-    if (resolved === 'README.zh.md') return `](/zh/${hash}${title})`;
-    if (existsSync(join(PRODUCT, resolved))) return `](${GH}/blob/main/${resolved}${hash}${title})`;
-    return match;
+  s = s.replace(/(href|src)="(?:\.\/)?([a-z0-9-]+)\.md(#[^"]*)?"/g, (_m, attr, slug, hash = '') => {
+    if (!PAGES.some((p) => p.slug === slug)) return _m;
+    return `${attr}="${lang === 'zh' ? `/zh/docs/${slug}/` : `/docs/${slug}/`}${hash}"`;
   });
-  return rewriteRaw(s, lang, sourcePath);
+  return s;
 }
 
 function nav(lang, current) {
   const groups = lang === 'zh' ? GROUPS_ZH : GROUPS_EN;
-  const labels = {
-    zh: { '概览': '概览', '开始': '开始', '理解': '理解', '运维': '运维', '英文参考': '英文参考' },
-    en: { 'Overview': 'Overview', 'Run': 'Run', 'Understand': 'Understand', 'Subsystems': 'Subsystems', 'Interop': 'Interop', 'Testing': 'Testing', 'Reports': 'Reports', 'Design & operations': 'Design & operations' },
-  };
-  const out = [];
-  for (const group of groups) {
-    const refSlugs = ['deepseek-api-key', 'governance', 'release-runbook', 'testing-layers'];
-    const pool = lang === 'zh' && group === '英文参考'
-      ? PAGES.filter((p) => refSlugs.includes(p.slug))
-      : PAGES.filter((p) => (lang === 'zh' ? p.groupZh === group : p.groupEn === group)).filter((p) => (lang === 'en' ? true : group === '英文参考' || p.zh));
-    const items = pool
-      .map((p) => {
-        const zhRef = { 'deepseek-api-key': '配置 DeepSeek API Key', governance: '治理', 'release-runbook': '发布运行手册', 'testing-layers': '测试层级' };
-        const title = lang === 'zh' && p.zh ? p.titleZh || titleOf(read(zhFile(p)), p.slug) : (lang === 'zh' ? zhRef[p.slug] || p.titleEn : p.titleEn) || titleOf(read(join(PRODUCT, p.en)), p.slug);
-        const href = lang === 'zh' && group !== '英文参考' && p.zh ? `/zh${p.slug ? `/docs/${p.slug}/` : '/'}` : `${p.slug ? `/docs/${p.slug}/` : '/'}`;
-        const active = href === current ? ' class="on"' : '';
-        const mark = lang === 'zh' && group === '英文参考' ? ' <span class="en-mark">EN</span>' : '';
-        return `<a${active} href="${href}">${esc(title)}${mark}</a>`;
-      }).join('');
-    if (items) {
-      const more = lang === 'zh' && group === '英文参考' ? `<a href="/docs/architecture/">完整英文文档 <span class="en-mark">EN</span></a>` : '';
-      out.push(`<h2>${esc(labels[lang][group] || group)}</h2>${items}${more}`);
-    }
-  }
-  return out.join('');
-}
-
-function page({ lang, slug, title, body, description, home = false }) {
-  const isZh = lang === 'zh';
-  const brand = isZh ? '/zh/' : '/';
-  const other = home ? (isZh ? '/' : '/zh/') : (isZh ? `/docs/${slug}/` : (PAGES.find((p) => p.slug === slug)?.zh ? `/zh/docs/${slug}/` : '/zh/'));
-  const current = home ? brand : isZh ? `/zh/docs/${slug}/` : `/docs/${slug}/`;
-  const navHtml = nav(lang, current);
-  return `<!doctype html><html lang="${isZh ? 'zh-CN' : 'en'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)} — FlyBot Docs</title><meta name="description" content="${esc(description || 'FlyBot documentation')}"><meta name="theme-color" content="#080a0f">
-<link rel="icon" href="/assets/images/logo.svg"><link rel="stylesheet" href="/assets/docs.css"><link rel="stylesheet" href="/assets/demo.css">
-<script defer src="/assets/demo.js"></script></head><body>
-<header class="site-header"><a class="brand" href="${brand}"><span class="brand-mark">F</span> HUGOXK <small>LAB / FLYBOT DOCS</small></a>
-<nav class="nav"><a href="${brand}">${isZh ? '文档首页' : 'Docs home'}</a><a href="${other}">${isZh ? 'English' : '中文'}</a><a href="${APP}">${isZh ? '打开 FlyBot' : 'Open FlyBot'} ↗</a><a href="${GH}">GitHub ↗</a></nav></header>
-<div class="docs-shell"><aside class="docs-nav"><h2>FlyBot</h2>${navHtml}<div class="app"><a href="${APP}">${isZh ? '打开 FlyBot' : 'Open FlyBot'} ↗</a><a href="${GH}">${isZh ? '源仓库' : 'Source'} ↗</a></div></aside><main class="docs-main">${body}</main></div>
-<footer class="docs-footer"><span>© 2026 HUGOXK // LAB · FLYBOT</span><div><a href="${brand}">${isZh ? '首页' : 'Home'}</a><a href="${APP}">${isZh ? '应用' : 'App'}</a><a href="${GH}">GitHub</a></div></footer></body></html>`;
+  return groups.map((group) => {
+    const items = PAGES.filter((p) => (lang === 'zh' ? p.groupZh === group : p.groupEn === group)).map((p) => {
+      const md = lang === 'zh' ? read(zhFile(p.slug)) : read(enFile(p.slug));
+      const title = titleOf(md, p.slug);
+      const href = lang === 'zh' ? (p.slug === 'overview' ? '/zh/' : `/zh/docs/${p.slug}/`) : (p.slug === 'overview' ? '/' : `/docs/${p.slug}/`);
+      return `<a class="${href === current ? 'on' : ''}" href="${href}">${esc(title)}</a>`;
+    }).join('');
+    return `<h2>${esc(group)}</h2>${items}`;
+  }).join('');
 }
 
 function demoHtml(lang) {
@@ -185,13 +74,19 @@ function demoHtml(lang) {
 })};</script>`;
 }
 
-const PAGES = collectPages();
-const EN_URL = new Map(PAGES.map((p) => [p.en, p.slug ? `/docs/${p.slug}/` : '/']));
-const ZH_URL = new Map(PAGES.filter((p) => p.zh).map((p) => [p.slug, p.slug ? `/zh/docs/${p.slug}/` : '/zh/']));
-
-for (const p of PAGES) {
-  p.titleEn = p.titleEn || titleOf(read(join(PRODUCT, p.en)), p.slug || 'FlyBot');
-  if (p.zh) p.titleZh = p.titleZh || titleOf(read(zhFile(p)), p.titleEn);
+function page({ lang, slug, title, body, home = false }) {
+  const isZh = lang === 'zh';
+  const current = home ? (isZh ? '/zh/' : '/') : (isZh ? `/zh/docs/${slug}/` : `/docs/${slug}/`);
+  const other = home ? (isZh ? '/' : '/zh/') : (isZh ? `/docs/${slug}/` : `/zh/docs/${slug}/`);
+  const brand = isZh ? '/zh/' : '/';
+  return `<!doctype html><html lang="${isZh ? 'zh-CN' : 'en'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title)} — FlyBot Docs</title><meta name="description" content="${esc(title)} — FlyBot documentation"><meta name="theme-color" content="#080a0f">
+<link rel="icon" href="/assets/images/logo.svg"><link rel="stylesheet" href="/assets/docs.css"><link rel="stylesheet" href="/assets/demo.css">
+<script defer src="/assets/demo.js"></script></head><body>
+<header class="site-header"><a class="brand" href="${brand}"><span class="brand-mark">F</span> HUGOXK <small>LAB / FLYBOT DOCS</small></a>
+<nav class="nav"><a href="${brand}">${isZh ? '文档首页' : 'Docs home'}</a><a href="${other}">${isZh ? 'English' : '中文'}</a><a href="${APP}">${isZh ? '打开 FlyBot' : 'Open FlyBot'} ↗</a><a href="${GH}">GitHub ↗</a></nav></header>
+<div class="docs-shell"><aside class="docs-nav"><h2>FlyBot</h2>${nav(lang, current)}<div class="app"><a href="${APP}">${isZh ? '打开 FlyBot' : 'Open FlyBot'} ↗</a><a href="${GH}">${isZh ? '源仓库' : 'Source'} ↗</a></div></aside><main class="docs-main">${body}</main></div>
+<footer class="docs-footer"><span>© 2026 HUGOXK // LAB · FLYBOT</span><div><a href="${brand}">${isZh ? '首页' : 'Home'}</a><a href="${APP}">${isZh ? '应用' : 'App'}</a><a href="${GH}">GitHub</a></div></footer></body></html>`;
 }
 
 rmSync(OUT, { recursive: true, force: true });
@@ -200,35 +95,45 @@ mkdirSync(join(OUT, 'docs'), { recursive: true });
 mkdirSync(join(OUT, 'zh', 'docs'), { recursive: true });
 
 for (const p of PAGES) {
-  const enDir = p.slug ? join(OUT, 'docs', p.slug) : OUT;
-  mkdirSync(enDir, { recursive: true });
-  const enBody = `<p class="mut" style="margin-bottom:18px"><a href="${GH}/blob/main/${p.en}">Edit ${esc(p.en)} on GitHub ↗</a></p>` + (p.slug === '' ? demoHtml('en') : '') + marked.parse(rewrite(read(join(PRODUCT, p.en)), 'en', p.en));
-  writeFileSync(join(enDir, 'index.html'), page({ lang: 'en', slug: p.slug, title: p.titleEn, body: enBody, home: p.slug === '' }));
-  if (!p.zh) continue;
-  const zhDir = p.slug ? join(OUT, 'zh', 'docs', p.slug) : join(OUT, 'zh');
-  mkdirSync(zhDir, { recursive: true });
-  const zhEdit = p.zhFrom === 'product' ? `${GH}/blob/main/${p.zh}` : `${DOCS_GH}/blob/main/translations/zh/${p.zh}`;
-  const zhLabel = p.zhFrom === 'product' ? p.zh : `translations/zh/${p.zh}`;
-  const zhBody = `<p class="mut" style="margin-bottom:18px"><a href="${zhEdit}">在 GitHub 上编辑 ${esc(zhLabel)} ↗</a></p>` + (p.slug === '' ? demoHtml('zh') : '') + marked.parse(rewrite(read(zhFile(p)), 'zh', p.zhFrom === 'product' ? p.zh : `translations/zh/${p.zh}`));
-  writeFileSync(join(zhDir, 'index.html'), page({ lang: 'zh', slug: p.slug, title: p.titleZh, body: zhBody, home: p.slug === '' }));
+  const enBody = `<p class="mut" style="margin-bottom:18px"><a href="${DOCS_GH}/blob/main/content/en/${p.slug}.md">Edit content/en/${p.slug}.md on GitHub ↗</a></p>` + (p.slug === 'overview' ? demoHtml('en') : '') + marked.parse(rewrite(read(enFile(p.slug)), 'en'));
+  const zhBody = `<p class="mut" style="margin-bottom:18px"><a href="${DOCS_GH}/blob/main/content/zh/${p.slug}.md">在 GitHub 上编辑 content/zh/${p.slug}.md ↗</a></p>` + (p.slug === 'overview' ? demoHtml('zh') : '') + marked.parse(rewrite(read(zhFile(p.slug)), 'zh'));
+  const enTitle = titleOf(read(enFile(p.slug)), p.slug);
+  const zhTitle = titleOf(read(zhFile(p.slug)), enTitle);
+  const enDir = p.slug === 'overview' ? OUT : join(OUT, 'docs', p.slug);
+  const zhDir = p.slug === 'overview' ? join(OUT, 'zh') : join(OUT, 'zh', 'docs', p.slug);
+  mkdirSync(enDir, { recursive: true }); mkdirSync(zhDir, { recursive: true });
+  writeFileSync(join(enDir, 'index.html'), page({ lang: 'en', slug: p.slug, title: enTitle, body: enBody, home: p.slug === 'overview' }));
+  writeFileSync(join(zhDir, 'index.html'), page({ lang: 'zh', slug: p.slug, title: zhTitle, body: zhBody, home: p.slug === 'overview' }));
 }
-
 
 function redirect(path, to) {
   const file = join(OUT, path, 'index.html');
   mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=${to}"><link rel="canonical" href="${to}"><title>Redirect</title></head><body><a href="${to}">Continue</a></body></html>`);
 }
-redirect('docs', '/');
-redirect('zh/docs', '/zh/');
-redirect('docs/readme.zh', '/zh/');
-redirect('docs/docker.zh', '/zh/docs/docker/');
-redirect('docs/known-issues.zh', '/zh/docs/known-issues/');
+for (const [from, to] of [
+  ['docs', '/'],
+  ['zh/docs', '/zh/'],
+  ['docs/readme.zh', '/zh/'],
+  ['docs/docker', '/docs/getting-started/'],
+  ['docs/docker.zh', '/zh/docs/getting-started/'],
+  ['docs/deepseek-api-key', '/docs/getting-started/'],
+  ['docs/known-issues', '/docs/reference/'],
+  ['docs/known-issues.zh', '/zh/docs/reference/'],
+  ['docs/autonomous-dev', '/docs/development/'],
+  ['docs/code-standards', '/docs/development/'],
+  ['docs/integrating', '/docs/architecture/'],
+  ['docs/governance', '/docs/reference/'],
+  ['docs/release-runbook', '/docs/reference/'],
+  ['docs/testing-layers', '/docs/development/'],
+  ['zh/docs/docker', '/zh/docs/getting-started/'],
+  ['zh/docs/autonomous-dev', '/zh/docs/development/'],
+  ['zh/docs/code-standards', '/zh/docs/development/'],
+  ['zh/docs/integrating', '/zh/docs/architecture/'],
+]) redirect(from, to);
 
-cpSync(join(PRODUCT, 'docs', 'images'), join(OUT, 'assets', 'images'), { recursive: true });
-if (existsSync(join(PRODUCT, 'docs', 'assets'))) cpSync(join(PRODUCT, 'docs', 'assets'), join(OUT, 'assets', 'docs-assets'), { recursive: true });
 cpSync(join(ROOT, 'docs', 'assets', 'docs.css'), join(OUT, 'assets', 'docs.css'));
 cpSync(join(ROOT, 'docs', 'assets', 'demo.css'), join(OUT, 'assets', 'demo.css'));
 cpSync(join(ROOT, 'docs', 'assets', 'demo.js'), join(OUT, 'assets', 'demo.js'));
 if (existsSync(join(ROOT, 'docs', 'assets', 'images'))) cpSync(join(ROOT, 'docs', 'assets', 'images'), join(OUT, 'assets', 'images'), { recursive: true });
-console.log(`built ${PAGES.length} English pages and ${PAGES.filter((p) => p.zh).length} Chinese pages into ${OUT}`);
+console.log(`built ${PAGES.length * 2} pages into ${OUT}`);
