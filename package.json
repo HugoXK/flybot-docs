@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "scripts": { "build": "node scripts/build.mjs" },
-  "dependencies": { "marked": "^18.1.1" },
+  "dependencies": { "marked": "^18.2.0" },
   "engines": { "node": ">=22" }
 }

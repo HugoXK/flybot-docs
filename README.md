@@ -1,5 +1,17 @@
 # FlyBot documentation site
 
-Static documentation for [FlyBot](https://github.com/ThinkFlowLab/FlyBot), published at <https://flybot-docs.hugoxk.online/>.
+Bilingual static documentation for [FlyBot](https://github.com/ThinkFlowLab/FlyBot), published at <https://flybot-docs.hugoxk.online/>.
 
-The site is built from the product repository's `README.md` and `docs/` on a schedule; the docs are not copied or pinned here. `docs/` in this repo only owns the site stylesheet.
+- English: `/`
+- 中文: `/zh/`
+
+English pages are built from `ThinkFlowLab/FlyBot` (`README.md` and `docs/`). Chinese pages use the product's existing Chinese files (`README.zh.md`, `docs/docker.zh.md`, `docs/known-issues.zh.md`) plus the translations in `translations/zh/`. Untranslated reference pages are listed under **英文参考** with an `EN` mark and are never mixed into the Chinese pages.
+
+The landing includes a browser-only FlyBot simulation (Chief → Lead → Dev / Test / Reviewer → merge queue). It makes no model calls and touches no repositories.
+
+## Build
+
+```sh
+npm install
+FLYBOT_DIR=../FlyBot npm run build
+```
