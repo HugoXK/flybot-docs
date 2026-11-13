@@ -1,0 +1,146 @@
+{
+  "en": {
+    "bots": {
+      "Chief": { "role": "Entry point", "memory": "Prefers one PR per change; keeps repo conventions.", "schedule": "Daily 09:00 triage" },
+      "Lead": { "role": "Engineering lead", "memory": "Risk tiers and repo conventions.", "schedule": "—" },
+      "Dev-1": { "role": "Core engineer", "memory": "Auth and parser modules.", "schedule": "—" },
+      "Dev-2": { "role": "Surface engineer", "memory": "API and UI surfaces.", "schedule": "—" },
+      "Test": { "role": "QA engineer", "memory": "Reproduction fixtures.", "schedule": "—" },
+      "Reviewer": { "role": "Reviewer", "memory": "Review gates and attestations.", "schedule": "—" }
+    },
+    "scenarios": {
+      "bug": {
+        "label": "Fix a redirect bug",
+        "request": "Fix the login redirect loop in the web app.",
+        "nudge": "Status: Dev-1 is patching the redirect; Test will verify before the reviewer gates the tip.",
+        "messages": [
+          { "role": "Chief", "text": "Lead, split this. Keep the repo conventions and the current risk tier." },
+          { "role": "Lead", "text": "Dev-1 implements, Test reproduces, Reviewer gates the tip. T2." },
+          { "role": "Dev-1", "text": "Patch ready: src/auth/redirect.ts. Tests pass." },
+          { "role": "Test", "text": "Reproduced the loop; verified the fix with two redirect cases." },
+          { "role": "Reviewer", "text": "PASS at a1b2c3d." },
+          { "role": "Merge queue", "text": "Squashed and merged. Release note ready." }
+        ],
+        "tasks": [
+          { "title": "Reproduce the redirect loop", "role": "Test", "states": ["queued", "queued", "done", "done"] },
+          { "title": "Patch redirect.ts", "role": "Dev-1", "states": ["queued", "doing", "review", "done"] },
+          { "title": "Verify redirect cases", "role": "Test", "states": ["queued", "queued", "doing", "done"] },
+          { "title": "Gate the tip", "role": "Reviewer", "states": ["queued", "queued", "queued", "done"] },
+          { "title": "Merge the PR", "role": "Merge queue", "states": ["queued", "queued", "queued", "done"] }
+        ]
+      },
+      "feature": {
+        "label": "Add a feature",
+        "request": "Add sort-by-recently-updated to the repository list.",
+        "nudge": "Status: Dev-2 is on the API and UI; Test is covering the list states.",
+        "messages": [
+          { "role": "Chief", "text": "Lead, split this. It touches the API and the repository list." },
+          { "role": "Lead", "text": "Dev-2 owns the API and UI; Test covers empty and paginated lists; Reviewer gates the tip. T2." },
+          { "role": "Dev-2", "text": "API and UI ready. Added pagination and empty-state tests." },
+          { "role": "Test", "text": "Verified empty, one-page and multi-page lists." },
+          { "role": "Reviewer", "text": "PASS at b2c3d4e." },
+          { "role": "Merge queue", "text": "Squashed and merged. Ships in the next patch release." }
+        ],
+        "tasks": [
+          { "title": "Design the sort API", "role": "Dev-2", "states": ["queued", "doing", "review", "done"] },
+          { "title": "Update the repository list UI", "role": "Dev-2", "states": ["queued", "queued", "doing", "done"] },
+          { "title": "Cover empty and paginated lists", "role": "Test", "states": ["queued", "queued", "queued", "done"] },
+          { "title": "Gate the tip", "role": "Reviewer", "states": ["queued", "queued", "queued", "done"] },
+          { "title": "Merge and release", "role": "Merge queue", "states": ["queued", "queued", "queued", "done"] }
+        ]
+      },
+      "docs": {
+        "label": "Update the docs",
+        "request": "Update the deployment guide for the sandbox preflight exit codes.",
+        "nudge": "Status: Dev-1 is rewriting the preflight section; Test is checking the commands.",
+        "messages": [
+          { "role": "Chief", "text": "Lead, split this. The guide is outdated." },
+          { "role": "Lead", "text": "Dev-1 updates the guide; Test checks the commands and exit codes; Reviewer gates the tip. T1." },
+          { "role": "Dev-1", "text": "Guide updated: preflight exit codes and the blocked-host note." },
+          { "role": "Test", "text": "Checked every command and exit code in a clean shell." },
+          { "role": "Reviewer", "text": "PASS at c3d4e5f." },
+          { "role": "Merge queue", "text": "Squashed and merged. The docs site rebuilds on schedule." }
+        ],
+        "tasks": [
+          { "title": "Rewrite the preflight section", "role": "Dev-1", "states": ["queued", "doing", "review", "done"] },
+          { "title": "Check the commands and exit codes", "role": "Test", "states": ["queued", "queued", "doing", "done"] },
+          { "title": "Check links and examples", "role": "Test", "states": ["queued", "queued", "queued", "done"] },
+          { "title": "Gate the tip", "role": "Reviewer", "states": ["queued", "queued", "queued", "done"] },
+          { "title": "Merge and rebuild the docs", "role": "Merge queue", "states": ["queued", "queued", "queued", "done"] }
+        ]
+      }
+    }
+  },
+  "zh": {
+    "bots": {
+      "Chief": { "role": "入口", "memory": "偏好一次一个 PR；保留仓库约定。", "schedule": "每日 09:00 分诊" },
+      "Lead": { "role": "工程负责人", "memory": "风险等级与仓库约定。", "schedule": "—" },
+      "Dev-1": { "role": "核心工程师", "memory": "认证与 parser 模块。", "schedule": "—" },
+      "Dev-2": { "role": "界面工程师", "memory": "API 与界面。", "schedule": "—" },
+      "Test": { "role": "QA", "memory": "复现 fixture。", "schedule": "—" },
+      "Reviewer": { "role": "审查者", "memory": "审查门与 attestation。", "schedule": "—" }
+    },
+    "scenarios": {
+      "bug": {
+        "label": "修复缺陷",
+        "request": "修复 Web 应用的登录重定向循环。",
+        "nudge": "状态：Dev-1 正在修重定向，Test 会在 Reviewer 审查前验证。",
+        "messages": [
+          { "role": "Chief", "text": "Lead，拆一下。保持仓库约定和当前风险等级。" },
+          { "role": "Lead", "text": "Dev-1 实现，Test 复现，Reviewer 在 tip 审查。T2。" },
+          { "role": "Dev-1", "text": "补丁已就绪：src/auth/redirect.ts，测试通过。" },
+          { "role": "Test", "text": "已复现循环，并用两个重定向用例验证修复。" },
+          { "role": "Reviewer", "text": "PASS at a1b2c3d。" },
+          { "role": "Merge queue", "text": "已 squash 合并，发布说明已准备。" }
+        ],
+        "tasks": [
+          { "title": "复现重定向循环", "role": "Test", "states": ["queued", "queued", "done", "done"] },
+          { "title": "修改 redirect.ts", "role": "Dev-1", "states": ["queued", "doing", "review", "done"] },
+          { "title": "验证重定向用例", "role": "Test", "states": ["queued", "queued", "doing", "done"] },
+          { "title": "审查 tip", "role": "Reviewer", "states": ["queued", "queued", "queued", "done"] },
+          { "title": "合并 PR", "role": "Merge queue", "states": ["queued", "queued", "queued", "done"] }
+        ]
+      },
+      "feature": {
+        "label": "新增能力",
+        "request": "为仓库列表增加“按最近更新排序”。",
+        "nudge": "状态：Dev-2 在做接口与界面，Test 覆盖列表状态。",
+        "messages": [
+          { "role": "Chief", "text": "Lead，拆一下。这次会改接口和仓库列表。" },
+          { "role": "Lead", "text": "Dev-2 负责接口与界面，Test 覆盖空列表与分页，Reviewer 在 tip 审查。T2。" },
+          { "role": "Dev-2", "text": "接口与界面已就绪，补充分页与空状态测试。" },
+          { "role": "Test", "text": "已验证空列表、单页与多页排序。" },
+          { "role": "Reviewer", "text": "PASS at b2c3d4e。" },
+          { "role": "Merge queue", "text": "已合并，进入下一个补丁版本。" }
+        ],
+        "tasks": [
+          { "title": "设计排序接口", "role": "Dev-2", "states": ["queued", "doing", "review", "done"] },
+          { "title": "更新仓库列表 UI", "role": "Dev-2", "states": ["queued", "queued", "doing", "done"] },
+          { "title": "覆盖空/分页列表", "role": "Test", "states": ["queued", "queued", "queued", "done"] },
+          { "title": "审查 tip", "role": "Reviewer", "states": ["queued", "queued", "queued", "done"] },
+          { "title": "合并并发布", "role": "Merge queue", "states": ["queued", "queued", "queued", "done"] }
+        ]
+      },
+      "docs": {
+        "label": "更新文档",
+        "request": "更新部署文档，说明 sandbox preflight 的退出码。",
+        "nudge": "状态：Dev-1 正在重写 preflight 章节，Test 在核对命令。",
+        "messages": [
+          { "role": "Chief", "text": "Lead，拆一下。这份指南已经过时。" },
+          { "role": "Lead", "text": "Dev-1 更新指南，Test 核对命令与退出码，Reviewer 在 tip 审查。T1。" },
+          { "role": "Dev-1", "text": "指南已更新：preflight 退出码与被阻塞主机的说明。" },
+          { "role": "Test", "text": "在干净 shell 中核对了每条命令与退出码。" },
+          { "role": "Reviewer", "text": "PASS at c3d4e5f。" },
+          { "role": "Merge queue", "text": "已合并，文档站点按计划重建。" }
+        ],
+        "tasks": [
+          { "title": "更新 preflight 章节", "role": "Dev-1", "states": ["queued", "doing", "review", "done"] },
+          { "title": "核对命令与退出码", "role": "Test", "states": ["queued", "queued", "doing", "done"] },
+          { "title": "检查链接与示例", "role": "Test", "states": ["queued", "queued", "queued", "done"] },
+          { "title": "审查 tip", "role": "Reviewer", "states": ["queued", "queued", "queued", "done"] },
+          { "title": "合并并重建文档", "role": "Merge queue", "states": ["queued", "queued", "queued", "done"] }
+        ]
+      }
+    }
+  }
+}
