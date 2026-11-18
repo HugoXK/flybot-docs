@@ -21,6 +21,7 @@ const PAGES = [
   { slug: 'development', groupEn: 'Development', groupZh: '开发' },
   { slug: 'controller', groupEn: 'Reference', groupZh: '参考' },
   { slug: 'reference', groupEn: 'Reference', groupZh: '参考' },
+  { slug: 'deepwiki', groupEn: 'Reference', groupZh: '参考' },
 ];
 const GROUPS_EN = ['Overview', 'Interactive demo', 'Getting started', 'Concepts', 'Development', 'Reference'];
 const GROUPS_ZH = ['概览', '交互演示', '快速开始', '概念', '开发', '参考'];
@@ -62,19 +63,73 @@ function appDemoHtml(lang) {
   return `<div class="fb" data-fb><aside class="fb-side"><div class="fb-brand">F <span>FlyBot</span></div><div class="fb-label">${zh ? '团队' : 'TEAM'}</div><div class="fb-tree" data-fb-tree></div><div class="fb-profile" data-fb-profile></div></aside><main class="fb-main"><header class="fb-head"><div><span class="fb-kicker">${zh ? '群聊' : 'GROUP'}</span><b># engineering</b></div><span data-fb-status></span></header><div class="fb-chat" data-fb-chat></div><div class="fb-compose"><select data-fb-scenario></select><button data-fb-send></button><button data-fb-nudge>${zh ? '催一下' : 'Nudge'}</button><button data-fb-reset>${zh ? '重置' : 'Reset'}</button></div></main><aside class="fb-board"><div class="fb-label">${zh ? '看板' : 'BOARD'}</div><div class="fb-columns" data-fb-board></div></aside></div><script>window.FLYBOT_APP=${JSON.stringify({ lang: zh ? 'zh' : 'en', ...data })};</script>`;
 }
 
+function deepwikiSection(lang) {
+  const zh = lang === 'zh';
+  const guide = zh ? '/zh/docs/deepwiki/' : '/docs/deepwiki/';
+  return `<section class="ask-dw" id="ask">
+<span class="ask-dw-label">${zh ? '向代码库提问' : 'ASK THE CODEBASE'} <span>· DEEPWIKI</span></span>
+<h2>${zh ? '有问题？<em>问 DeepWiki。</em>' : 'Questions?<br><em>Ask DeepWiki.</em>'}</h2>
+<p>${zh ? 'DeepWiki 索引 FlyBot 仓库，回答时给出源码链接。用右下角的 <strong>问 DeepWiki</strong> 按钮在这里对话，或打开页面浏览。同一个 MCP 服务器也能接进 Claude Code、Codex、OpenCode 或 DeepSeek Harness。' : 'DeepWiki indexes the FlyBot repository and answers with links to the source. Use the <strong>Ask DeepWiki</strong> button in the bottom-right corner to chat here, or open the page to browse. The same MCP server works inside Claude Code, Codex, OpenCode or DeepSeek Harness.'}</p>
+<div class="ask-dw-actions">
+<a class="btn primary" href="https://deepwiki.com/ThinkFlowLab/FlyBot" target="_blank" rel="noopener" data-deepwiki-open>${zh ? '问 DeepWiki' : 'Ask DeepWiki'} <span>↗</span></a>
+<code>claude mcp add -s user -t http deepwiki https://mcp.deepwiki.com/mcp</code>
+<small>${zh ? '接入说明' : 'Setup guide'}: <a href="${guide}">${zh ? 'DeepWiki 指南' : 'the DeepWiki guide'} ↗</a></small>
+</div>
+</section>`;
+}
+
 function page({ lang, slug, title, body, home = false }) {
   const isZh = lang === 'zh';
   const current = home ? (isZh ? '/zh/' : '/') : (isZh ? `/zh/docs/${slug}/` : `/docs/${slug}/`);
   const other = home ? (isZh ? '/' : '/zh/') : (isZh ? `/docs/${slug}/` : `/zh/docs/${slug}/`);
   const brand = isZh ? '/zh/' : '/';
-  return `<!doctype html><html lang="${isZh ? 'zh-CN' : 'en'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(title)} — FlyBot Docs</title><meta name="description" content="${esc(title)} — FlyBot documentation"><meta name="theme-color" content="#080a0f">
-<link rel="icon" href="/assets/images/logo.svg"><link rel="stylesheet" href="/assets/docs.css"><link rel="stylesheet" href="/assets/demo.css?v=3"><link rel="stylesheet" href="/assets/app.css">
-<script defer src="/assets/demo.js?v=3"></script><script defer src="/assets/app.js"></script></head><body>
-<header class="site-header"><a class="brand" href="${brand}"><span class="brand-mark">F</span> HUGOXK <small>LAB / FLYBOT DOCS</small></a>
-<nav class="nav"><a href="${brand}">${isZh ? '文档首页' : 'Docs home'}</a><a href="${other}">${isZh ? 'English' : '中文'}</a><a href="${APP}">${isZh ? '打开 FlyBot' : 'Open FlyBot'} ↗</a><a href="${GH}">GitHub ↗</a></nav></header>
-<div class="docs-shell"><aside class="docs-nav"><h2>FlyBot</h2>${nav(lang, current)}<div class="app"><a href="${APP}">${isZh ? '打开 FlyBot' : 'Open FlyBot'} ↗</a><a href="${GH}">${isZh ? '源仓库' : 'Source'} ↗</a></div></aside><main class="docs-main">${body}</main></div>
-<footer class="docs-footer"><span>© 2026 HUGOXK // LAB · FLYBOT</span><div><a href="${brand}">${isZh ? '首页' : 'Home'}</a><a href="${APP}">${isZh ? '应用' : 'App'}</a><a href="${GH}">GitHub</a></div></footer></body></html>`;
+  const guide = isZh ? '/zh/docs/deepwiki/' : '/docs/deepwiki/';
+  return `<!doctype html>
+<html lang="${isZh ? 'zh-CN' : 'en'}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title)} — FlyBot Docs</title>
+<meta name="description" content="${esc(title)} — FlyBot documentation">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#07090d" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f3f6fc" media="(prefers-color-scheme: light)">
+<link rel="icon" href="/assets/images/logo.svg">
+<script>try{var t=localStorage.getItem('flybot-docs-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
+<script>window.FLYBOT_DOCS={lang:"${isZh ? 'zh' : 'en'}",guide:"${guide}"};</script>
+<link rel="stylesheet" href="/assets/docs.css">
+<link rel="stylesheet" href="/assets/demo.css?v=3">
+<link rel="stylesheet" href="/assets/app.css">
+<link rel="stylesheet" href="/assets/deepwiki.css">
+<script defer src="/assets/demo.js?v=3"></script>
+<script defer src="/assets/app.js"></script>
+<script defer src="/assets/docs.js"></script>
+<script defer src="/assets/deepwiki.js"></script>
+</head>
+<body${home ? ' class="docs-home"' : ''}>
+<a class="skip-link" href="#main">${isZh ? '跳到正文' : 'Skip to main content'}</a>
+<header class="site-header">
+  <a class="brand" href="${brand}"><span class="brand-mark">F</span><span>FlyBot <small>Docs</small></span></a>
+  <div class="header-actions">
+    <nav class="nav" aria-label="${isZh ? '文档导航' : 'Docs navigation'}">
+      <a href="${brand}">${isZh ? '文档首页' : 'Docs home'}</a>
+      <a href="${other}">${isZh ? 'English' : '中文'}</a>
+      <a href="${APP}">${isZh ? '打开 FlyBot' : 'Open FlyBot'} ↗</a>
+      <a class="nav-ask" href="https://deepwiki.com/ThinkFlowLab/FlyBot" target="_blank" rel="noopener">DeepWiki ↗</a>
+      <a href="${GH}">GitHub ↗</a>
+    </nav>
+    <button class="theme-toggle" type="button" data-docs-theme aria-label="${isZh ? '切换主题' : 'Switch theme'}" title="${isZh ? '切换主题' : 'Switch theme'}">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 15.2A8.4 8.4 0 0 1 8.8 4a8.4 8.4 0 1 0 11.2 11.2Z"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </div>
+</header>
+<div class="docs-shell">
+  <aside class="docs-nav" aria-label="${isZh ? 'FlyBot 文档' : 'FlyBot documentation'}"><h2>FlyBot</h2>${nav(lang, current)}<div class="app"><a href="${APP}">${isZh ? '打开 FlyBot' : 'Open FlyBot'} ↗</a><a href="${GH}">${isZh ? '源仓库' : 'Source'} ↗</a><a href="https://deepwiki.com/ThinkFlowLab/FlyBot" target="_blank" rel="noopener">DeepWiki ↗</a></div></aside>
+  <main class="docs-main" id="main">${body}</main>
+</div>
+<footer class="docs-footer"><span>© 2026 HUGOXK // LAB · FLYBOT</span><div><a href="${brand}">${isZh ? '首页' : 'Home'}</a><a href="${APP}">${isZh ? '应用' : 'App'}</a><a href="${GH}">GitHub</a><a href="https://deepwiki.com/ThinkFlowLab/FlyBot" target="_blank" rel="noopener">DeepWiki</a></div></footer>
+</body></html>`;
 }
 
 rmSync(OUT, { recursive: true, force: true });
@@ -95,12 +150,12 @@ for (const p of PAGES) {
     const enCut = p.slug === 'overview' ? enMd.indexOf('\n## ') : -1;
     const enIntro = enCut === -1 ? enMd : enMd.slice(0, enCut);
     const enRest = enCut === -1 ? '' : enMd.slice(enCut + 1);
-    enBody = enEdit + marked.parse(enIntro) + (p.slug === 'overview' ? appDemoHtml('en') : '') + marked.parse(enRest);
+    enBody = enEdit + marked.parse(enIntro) + (p.slug === 'overview' ? appDemoHtml('en') + deepwikiSection('en') : '') + marked.parse(enRest);
     const zhMd = rewrite(read(zhFile(p.slug)), 'zh');
     const zhCut = p.slug === 'overview' ? zhMd.indexOf('\n## ') : -1;
     const zhIntro = zhCut === -1 ? zhMd : zhMd.slice(0, zhCut);
     const zhRest = zhCut === -1 ? '' : zhMd.slice(zhCut + 1);
-    zhBody = zhEdit + marked.parse(zhIntro) + (p.slug === 'overview' ? appDemoHtml('zh') : '') + marked.parse(zhRest);
+    zhBody = zhEdit + marked.parse(zhIntro) + (p.slug === 'overview' ? appDemoHtml('zh') + deepwikiSection('zh') : '') + marked.parse(zhRest);
   }
   const enDir = p.slug === 'overview' ? OUT : join(OUT, 'docs', p.slug);
   const zhDir = p.slug === 'overview' ? join(OUT, 'zh') : join(OUT, 'zh', 'docs', p.slug);
@@ -117,6 +172,8 @@ function redirect(path, to) {
 for (const [from, to] of [
   ['docs', '/'],
   ['zh/docs', '/zh/'],
+  ['deepwiki', '/docs/deepwiki/'],
+  ['zh/deepwiki', '/zh/docs/deepwiki/'],
   ['docs/readme.zh', '/zh/'],
   ['docs/docker', '/docs/getting-started/'],
   ['docs/docker.zh', '/zh/docs/getting-started/'],
@@ -136,6 +193,9 @@ for (const [from, to] of [
 ]) redirect(from, to);
 
 cpSync(join(ROOT, 'docs', 'assets', 'docs.css'), join(OUT, 'assets', 'docs.css'));
+cpSync(join(ROOT, 'docs', 'assets', 'docs.js'), join(OUT, 'assets', 'docs.js'));
+cpSync(join(ROOT, 'docs', 'assets', 'deepwiki.css'), join(OUT, 'assets', 'deepwiki.css'));
+cpSync(join(ROOT, 'docs', 'assets', 'deepwiki.js'), join(OUT, 'assets', 'deepwiki.js'));
 cpSync(join(ROOT, 'docs', 'assets', 'demo.css'), join(OUT, 'assets', 'demo.css'));
 cpSync(join(ROOT, 'docs', 'assets', 'demo.js'), join(OUT, 'assets', 'demo.js'));
 cpSync(join(ROOT, 'docs', 'assets', 'app.css'), join(OUT, 'assets', 'app.css'));
