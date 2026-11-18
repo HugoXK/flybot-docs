@@ -35,10 +35,10 @@ jobs:
           node-version: 22
       - run: npm install --no-audit --no-fund
       - run: node scripts/build.mjs
-      - run: echo flybot-docs.hugoxk.online > site/CNAME
+      - run: echo docs.flybot.hugoxk.online > site/CNAME
       - uses: actions/configure-pages@v5
         with:
-          cname: flybot-docs.hugoxk.online
+          cname: docs.flybot.hugoxk.online
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
