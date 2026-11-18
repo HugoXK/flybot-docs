@@ -1,6 +1,6 @@
 # FlyBot documentation
 
-Bilingual documentation for [FlyBot](https://github.com/ThinkFlowLab/FlyBot), published at <https://flybot-docs.hugoxk.online/>.
+Bilingual documentation for [FlyBot](https://github.com/ThinkFlowLab/FlyBot), published at <https://docs.flybot.hugoxk.online/>.
 
 - English: `/`
 - 中文: `/zh/`
