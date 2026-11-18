@@ -19,12 +19,23 @@ const PAGES = [
   { slug: 'architecture', groupEn: 'Concepts', groupZh: '概念' },
   { slug: 'sandbox', groupEn: 'Concepts', groupZh: '概念' },
   { slug: 'development', groupEn: 'Development', groupZh: '开发' },
+  { slug: 'deep-dive', groupEn: 'Internals', groupZh: '内部实现' },
   { slug: 'controller', groupEn: 'Reference', groupZh: '参考' },
   { slug: 'reference', groupEn: 'Reference', groupZh: '参考' },
   { slug: 'deepwiki', groupEn: 'Reference', groupZh: '参考' },
 ];
-const GROUPS_EN = ['Overview', 'Interactive demo', 'Getting started', 'Concepts', 'Development', 'Reference'];
-const GROUPS_ZH = ['概览', '交互演示', '快速开始', '概念', '开发', '参考'];
+const GROUPS_EN = ['Overview', 'Interactive demo', 'Getting started', 'Concepts', 'Development', 'Internals', 'Reference'];
+const GROUPS_ZH = ['概览', '交互演示', '快速开始', '概念', '开发', '内部实现', '参考'];
+const HOME_START = [
+  ['getting-started', 'Install the core and the plugins.', '安装核心和插件。'],
+  ['architecture', 'The host, the tree and the plugins.', 'Host、树与插件。'],
+  ['sandbox', 'Where Bots run and what they can reach.', 'Bot 在哪里运行、能碰到什么。'],
+  ['development', 'Work on FlyBot itself.', '开发 FlyBot 本身。'],
+  ['controller', 'The controller and the runtime.', '控制器与运行时。'],
+  ['reference', 'Commands, files and APIs.', '命令、文件与 API。'],
+  ['deep-dive', 'The DeepWiki map in one page.', '一页看懂 DeepWiki 地图。'],
+  ['deepwiki', 'Ask the codebase.', '向代码库提问。'],
+];
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const read = (p) => readFileSync(p, 'utf8');
@@ -43,6 +54,11 @@ function rewrite(md, lang) {
     return `${attr}="${lang === 'zh' ? `/zh/docs/${slug}/` : `/docs/${slug}/`}${hash}"`;
   });
   return s;
+}
+
+function urls(lang, slug) {
+  if (lang === 'zh') return slug === 'overview' ? '/zh/' : `/zh/docs/${slug}/`;
+  return slug === 'overview' ? '/' : `/docs/${slug}/`;
 }
 
 function nav(lang, current) {
@@ -76,6 +92,50 @@ function deepwikiSection(lang) {
 <small>${zh ? '接入说明' : 'Setup guide'}: <a href="${guide}">${zh ? 'DeepWiki 指南' : 'the DeepWiki guide'} ↗</a></small>
 </div>
 </section>`;
+}
+
+function homeHero(lang, lead) {
+  const zh = lang === 'zh';
+  return `<section class="home-hero">
+  <div class="home-hero-copy">
+    <div class="home-eyebrow"><span class="home-dot"></span>${zh ? '长期在线的本地 AI Bot 团队' : 'A LOCAL TEAM OF LONG-LIVED AI BOTS'}</div>
+    <h1>${zh ? '一个团队。<br><em>很多双手。</em>' : 'One team.<br><em>Many hands.</em>'}</h1>
+    <p>${marked.parseInline(lead)}</p>
+    <div class="home-ctas"><a class="btn primary" href="${urls(lang, 'getting-started')}">${zh ? '安装 FlyBot' : 'Install FlyBot'} <span>↗</span></a><a class="btn ghost" href="${urls(lang, 'architecture')}">${zh ? '认识团队' : 'Meet the team'} <span>↓</span></a></div>
+    <div class="home-command"><span>$</span><code>npx -y @deepseek-ai/dsh@0.2.1-rc.2 plugin --profile web add "github:ThinkFlowLab/FlyBot#main&amp;path:/core"</code><a href="${APP}" target="_blank" rel="noopener">${zh ? '打开' : 'Open'} ↗</a></div>
+  </div>
+  <div class="home-orbit" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div><div class="orbit-center">F</div><div class="orbit-note note-one">${zh ? '安装' : 'install'} <b>01</b></div><div class="orbit-note note-two">${zh ? '找 Chief' : 'talk to the Chief'} <b>02</b></div><div class="orbit-note note-three">${zh ? '审查' : 'review'} <b>03</b></div></div>
+</section>`;
+}
+
+function homeProof(lang) {
+  const zh = lang === 'zh';
+  const items = zh
+    ? [['01', '持久记忆'], ['02', '本地控制'], ['03', '有边界的自主']]
+    : [['01', 'Persistent memory'], ['02', 'Local control'], ['03', 'Bounded autonomy']];
+  return `<section class="home-proof"><span>${zh ? 'FLYBOT 一览' : 'FLYBOT AT A GLANCE'}</span>${items.map(([n, text]) => `<div><b>${n}</b>${esc(text)}</div>`).join('')}</section>`;
+}
+
+function homeHow(lang) {
+  const zh = lang === 'zh';
+  const steps = zh
+    ? [['01', '安装', '添加核心和需要的插件。'], ['02', '找 Chief', '整个团队一个入口。'], ['03', '拆分', '树把每一块交给合适的角色。'], ['04', '工作', 'Bot 用自己的记忆、文件夹和模型。'], ['05', '审查', '敏感动作要审批。'], ['06', '保留', '团队在回合之间继续存在。']]
+    : [['01', 'Install', 'Add the core and the plugins you want.'], ['02', 'Talk to the Chief', 'One entry point for the whole team.'], ['03', 'Split', 'The tree hands each slice to a role.'], ['04', 'Work', 'Bots use their own memory, folders and models.'], ['05', 'Review', 'Approvals gate sensitive actions.'], ['06', 'Keep', 'The team survives between turns.']];
+  return `<section class="home-section"><div class="section-label">${zh ? '它怎么工作' : 'HOW IT WORKS'} <span>01 / 03</span></div><h2>${zh ? '从一句话<br><em>到一个团队。</em>' : 'From one message<br><em>to a team.</em>'}</h2><p>${zh ? '你只跟 Chief 说话；它把任务拆给树上的 Bot，每个 Bot 带着自己的记忆、文件夹和模型回来，团队在回合之间继续存在。' : 'You talk to the Chief; it splits the work across the tree, each Bot comes back with its own memory, folders and model, and the team survives between turns.'}</p><div class="home-process">${steps.map(([n, title, text]) => `<div><span>${n}</span><strong>${esc(title)}</strong><small>${esc(text)}</small></div>`).join('')}</div></section>`;
+}
+
+function homeStart(lang) {
+  const zh = lang === 'zh';
+  const cards = HOME_START.map(([slug, en, zhText]) => {
+    const title = titleOf(read(lang === 'zh' ? zhFile(slug) : enFile(slug)), slug);
+    return `<a class="home-card" href="${urls(lang, slug)}"><b>${esc(title)}</b><span>${esc(zh ? zhText : en)}</span><em>${zh ? '阅读' : 'Read'} ↗</em></a>`;
+  }).join('');
+  return `<section class="home-section"><div class="section-label">${zh ? '从这里开始' : 'START HERE'} <span>02 / 03</span></div><h2>${zh ? '选一条<br><em>进入团队的路径。</em>' : 'Pick a path<br><em>into the team.</em>'}</h2><div class="home-cards">${cards}</div></section>`;
+}
+
+function homeCta(lang) {
+  const zh = lang === 'zh';
+  return `<section class="home-cta"><div><span class="section-label">${zh ? '准备好了就开始' : 'READY WHEN YOU ARE'}</span><h2>${zh ? '从一个团队开始。' : 'Start with a team.'}</h2><p>${zh ? '安装核心，叫上 Chief，描述一个目标。' : 'Install the core, talk to the Chief, describe one goal.'}</p></div><a class="btn primary" href="${urls(lang, 'getting-started')}">${zh ? '打开快速开始' : 'Open the quickstart'} <span>↗</span></a></section>`;
 }
 
 function page({ lang, slug, title, body, home = false }) {
@@ -150,12 +210,19 @@ for (const p of PAGES) {
     const enCut = p.slug === 'overview' ? enMd.indexOf('\n## ') : -1;
     const enIntro = enCut === -1 ? enMd : enMd.slice(0, enCut);
     const enRest = enCut === -1 ? '' : enMd.slice(enCut + 1);
-    enBody = enEdit + marked.parse(enIntro) + (p.slug === 'overview' ? appDemoHtml('en') + deepwikiSection('en') : '') + marked.parse(enRest);
     const zhMd = rewrite(read(zhFile(p.slug)), 'zh');
     const zhCut = p.slug === 'overview' ? zhMd.indexOf('\n## ') : -1;
     const zhIntro = zhCut === -1 ? zhMd : zhMd.slice(0, zhCut);
     const zhRest = zhCut === -1 ? '' : zhMd.slice(zhCut + 1);
-    zhBody = zhEdit + marked.parse(zhIntro) + (p.slug === 'overview' ? appDemoHtml('zh') + deepwikiSection('zh') : '') + marked.parse(zhRest);
+    if (p.slug === 'overview') {
+      const enLead = enIntro.replace(/^#\s+[^\n]*\n+/, '').trim();
+      const zhLead = zhIntro.replace(/^#\s+[^\n]*\n+/, '').trim();
+      enBody = `<div class="home">${homeHero('en', enLead)}${homeProof('en')}${homeHow('en')}<section class="home-demo">${appDemoHtml('en')}</section>${homeStart('en')}<section class="home-markdown">${enEdit}${marked.parse(enRest)}</section>${deepwikiSection('en')}${homeCta('en')}</div>`;
+      zhBody = `<div class="home">${homeHero('zh', zhLead)}${homeProof('zh')}${homeHow('zh')}<section class="home-demo">${appDemoHtml('zh')}</section>${homeStart('zh')}<section class="home-markdown">${zhEdit}${marked.parse(zhRest)}</section>${deepwikiSection('zh')}${homeCta('zh')}</div>`;
+    } else {
+      enBody = enEdit + marked.parse(enIntro);
+      zhBody = zhEdit + marked.parse(zhIntro);
+    }
   }
   const enDir = p.slug === 'overview' ? OUT : join(OUT, 'docs', p.slug);
   const zhDir = p.slug === 'overview' ? join(OUT, 'zh') : join(OUT, 'zh', 'docs', p.slug);
